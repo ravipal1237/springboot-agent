@@ -1,8 +1,18 @@
 import os, sys
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
-
 from .agents import analyzer, architect, blueprint, codegen, security, validator, qa_gate
+from .utils.logging import setup_logger
+from langsmith import Client
+
+# Optional: force project name in case env var is missing
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "springboot-agent")
+
+# Initialize LangSmith client
+client = Client()
+print(f"🔗 LangSmith tracing enabled. Project: {os.environ['LANGCHAIN_PROJECT']}")
+
+logger = setup_logger("orchestrator")
 
 class S(TypedDict, total=False):
     requirements: str
@@ -31,7 +41,7 @@ graph.add_edge('security', 'validator')
 graph.add_edge('validator', 'qa')
 graph.add_edge('qa', END)
 
-app = graph.compile()  # stateless
+app = graph.compile()
 
 def main():
     if len(sys.argv) < 2:
@@ -39,14 +49,19 @@ def main():
         sys.exit(1)
     req = sys.argv[1]
     state: S = {'requirements': req, 'repo': os.path.abspath('generated-app-enterprise')}
+
+    logger.info("graph:start", extra={"repo": state['repo']})
+    for ev in app.stream(state):
+        # ev contains node deltas; log compactly
+        logger.info("graph:event", extra={k: True for k in ev.keys()})
+        print(ev)
+
     final = app.invoke(state)
-    # Persist ADR
     if final.get('adr'):
         os.makedirs(final['repo'], exist_ok=True)
         with open(os.path.join(final['repo'], 'ADR.md'), 'w', encoding='utf-8') as f:
             f.write(final['adr'])
-    print('\n===== SPEC (head) =====\n', final.get('spec','')[:2000])
-    print('\n===== ADR (head) =====\n', final.get('adr','')[:2000])
+    logger.info("graph:done", extra={"verdict": final.get('verdict'), "repo": final.get('repo')})
     print('\n===== QA VERDICT =====\n', final.get('verdict'))
     print('\nRepo:', final.get('repo'))
 

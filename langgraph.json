@@ -1,0 +1,13 @@
+{
+  "graphs": {
+    "default": "langgraph_agent.orchestrator:app"
+  },
+   "dependencies": [
+    "langgraph_agent"
+  ],
+  "env": ".env",
+  "studio": {
+    "host": "localhost",
+    "port": 3000
+  }
+}

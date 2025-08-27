@@ -1,4 +1,4 @@
-import os, re, subprocess
+import os, re, subprocess, time
 from typing import List, Tuple
 
 FENCE = re.compile(r"```(\w+)([^\n`]*)\n(.*?)```", re.DOTALL)
@@ -30,5 +30,8 @@ def apply_fenced_drops(text: str, repo_root: str):
         target = os.path.join(repo_root, rel)
         write(target, body.strip() + "\n")
 
-def tail(s: str, n: int = 6000) -> str:
+def tail(s: str, n: int = 8000) -> str:
     return s[-n:] if s else s
+
+def ts():
+    return time.strftime('%Y-%m-%d %H:%M:%S')

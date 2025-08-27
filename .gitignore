@@ -126,3 +126,7 @@ docker-compose.override.yml
 .env.*
 secrets.json
 credentials.json
+
+
+# LangGraph / LangSmith local API config
+.langgraph_api
